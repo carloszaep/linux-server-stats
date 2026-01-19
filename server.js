@@ -35,15 +35,14 @@ app.get('/api/stats', async (req, res) => {
         // networkInterfaces can be an array or object depending on version/call, 
         // systeminformation.networkInterfaces() usually returns an array of objects.
         const interfaces = Array.isArray(networkInterfaces) ? networkInterfaces : [networkInterfaces];
-        const mainInterface = interfaces.find(iface => !iface.internal && iface.ip4) || {};
-        const ip4 = mainInterface.ip4 || 'Unknown';
+        const mainInterface = interfaces[0].ip4 || 'Unknown';
 
         res.json({
             load: Number(systemLoad),
             disk_usage: diskUsageStr,
             memory: memoryStr,
             temperature: temp.main,
-            ip: ip4
+            ip: mainInterface
         });
     } catch (error) {
         console.error('Error fetching stats:', error);
