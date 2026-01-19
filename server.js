@@ -37,6 +37,8 @@ app.get('/api/stats', async (req, res) => {
         const interfaces = Array.isArray(networkInterfaces) ? networkInterfaces : [networkInterfaces];
         const mainInterface = interfaces[0].ip4 || 'Unknown';
 
+        console.log(interfaces);
+
         res.json({
             load: Number(systemLoad),
             disk_usage: diskUsageStr,
