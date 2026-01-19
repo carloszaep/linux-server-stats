@@ -46,21 +46,24 @@ The API will be available at:
 
 ## Management
 
-- **Stop the server:**
-  ```bash
-  docker-compose down
-  ```
+### Stopping the Service
+To stop the containers and remove the network:
+```bash
+docker-compose down
+```
+*If you just want to stop it without removing containers, usage `docker-compose stop`.*
 
-- **View Logs:**
-  ```bash
-  docker-compose logs -f
-  ```
+### Viewing Logs
+To see the live logs of the server:
+```bash
+docker-compose logs -f
+```
 
-- **Update the ID:**
-  If you modify the code, simply run the start command again:
-  ```bash
-  docker-compose up -d --build
-  ```
+### Updating the Application
+If you modify the code (e.g. change `server.js`), run this to rebuild and restart:
+```bash
+docker-compose up -d --build
+```
 
 ## For ESP32 Developers
 Make sure your ESP32 is connected to the same Wi-Fi/Network as this server. Use `HTTPClient` to make a GET request to the IP and Port defined above.

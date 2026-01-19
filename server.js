@@ -10,19 +10,40 @@ app.use(cors());
 
 app.get('/api/stats', async (req, res) => {
     try {
-        const [temp, load, mem, time] = await Promise.all([
+        const [temp, load, mem, fsSize, networkInterfaces] = await Promise.all([
             si.cpuTemperature(),
             si.currentLoad(),
             si.mem(),
-            si.time()
+            si.fsSize(),
+            si.networkInterfaces()
         ]);
 
+        // 1. System Load
+        const systemLoad = load.currentLoad.toFixed(1);
+
+        // 2. Disk Usage (Find root '/' or first available)
+        const disk = fsSize.find(d => d.mount === '/') || fsSize[0];
+        const diskTotalGb = (disk.size / (1024 * 1024 * 1024)).toFixed(0);
+        const diskUsageStr = `${disk.use.toFixed(1)}% of ${diskTotalGb}GB`;
+
+        // 3. Memory Usage
+        const memUsedGb = (mem.active / (1024 * 1024 * 1024)).toFixed(2);
+        const memTotalGb = (mem.total / (1024 * 1024 * 1024)).toFixed(2);
+        const memoryStr = `${memUsedGb}GB / ${memTotalGb}GB`;
+
+        // 4. IPv4 Address (First non-internal)
+        // networkInterfaces can be an array or object depending on version/call, 
+        // systeminformation.networkInterfaces() usually returns an array of objects.
+        const interfaces = Array.isArray(networkInterfaces) ? networkInterfaces : [networkInterfaces];
+        const mainInterface = interfaces.find(iface => !iface.internal && iface.ip4) || {};
+        const ip4 = mainInterface.ip4 || 'Unknown';
+
         res.json({
-            temperature: temp,
-            load: load,
-            memory: mem,
-            uptime: time.uptime,
-            timestamp: Date.now()
+            load: Number(systemLoad),
+            disk_usage: diskUsageStr,
+            memory: memoryStr,
+            temperature: temp.main,
+            ip: ip4
         });
     } catch (error) {
         console.error('Error fetching stats:', error);
