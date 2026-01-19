@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const si = require('systeminformation');
+const os = require('os');
 
 const app = express();
 // Default to 3333, but allow override
@@ -10,12 +11,11 @@ app.use(cors());
 
 app.get('/api/stats', async (req, res) => {
     try {
-        const [temp, load, mem, fsSize, networkInterfaces] = await Promise.all([
+        const [temp, load, mem, fsSize] = await Promise.all([
             si.cpuTemperature(),
             si.currentLoad(),
             si.mem(),
-            si.fsSize(),
-            si.networkInterfaces()
+            si.fsSize()
         ]);
 
         // 1. System Load
@@ -31,20 +31,30 @@ app.get('/api/stats', async (req, res) => {
         const memTotalGb = (mem.total / (1024 * 1024 * 1024)).toFixed(2);
         const memoryStr = `${memUsedGb}GB / ${memTotalGb}GB`;
 
-        // 4. IPv4 Address (First non-internal)
-        // networkInterfaces can be an array or object depending on version/call, 
-        // systeminformation.networkInterfaces() usually returns an array of objects.
-        const interfaces = Array.isArray(networkInterfaces) ? networkInterfaces : [networkInterfaces];
-        const mainInterface = interfaces[0].ip4 || 'Unknown';
+        // 4. IPv4 Address (Using Node's os module for reliability)
+        const interfaces = os.networkInterfaces();
+        let localIP = 'Unknown';
 
-        console.log(interfaces);
+        // Loop through all interfaces to find the first non-internal IPv4
+        for (const name of Object.keys(interfaces)) {
+            for (const iface of interfaces[name]) {
+                // Skip loopback (127.0.0.1) and non-IPv4 addresses
+                if (iface.family === 'IPv4' && !iface.internal) {
+                    localIP = iface.address;
+                    break;
+                }
+            }
+            if (localIP !== 'Unknown') break;
+        }
+
+
 
         res.json({
             load: Number(systemLoad),
             disk_usage: diskUsageStr,
             memory: memoryStr,
             temperature: temp.main,
-            ip: mainInterface
+            ip: localIP
         });
     } catch (error) {
         console.error('Error fetching stats:', error);
